@@ -1,5 +1,9 @@
 #!/usr/bin/perl
-
+#
+# Used As a Reference Point: http://programming-in-linux.blogspot.com/2008/09/remote-scp-and-ssh-using-expect.html
+#
+#
+#
 use warnings;
 use Expect;
 
