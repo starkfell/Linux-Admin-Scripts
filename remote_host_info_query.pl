@@ -4,7 +4,7 @@
 #
 # Author(s):     Ryan Irujo
 # Inception:     01.14.2013
-# Last Modified: 01.14.2013
+# Last Modified: 01.15.2013
 #
 # Description:   Script that queries the IP Address and OS Type on a set of hosts (read from a text file). Simply type in the name
 #                of all of the Hosts you would like to query in same directory as this script is in and make sure
@@ -16,10 +16,9 @@
 # Changes:
 #
 #
-# Syntax 1:      ./remote_host_info_query [Username] [Password] > [text_file_for_full_results]
-# Syntax 2:      ./remote_host_info_query [Username] [Password]
+# Syntax 1:      ./remote_host_info_query [Username] [Password] > [ip_os_query_file]
 #
-# Command Line:  ./remote_host_info_query username P@wer89d! > results.txt
+# Command Line:  ./remote_host_info_query username P@wer89d! > ip_os_query.txt
 
 
 use warnings;
@@ -29,18 +28,13 @@ use Expect;
 # Main Variables
 #--------------------------------------------------------------
 
-my $scp                    = "/usr/bin/scp";
 my $ssh                    = "/usr/bin/ssh";
 my $host_list              = "./hosts.txt";
 my $user                   = $ARGV[0];
 my $password               = $ARGV[1];
 my $timeout                = 10;
-
-my $ip_query = `/sbin/ifconfig | perl -nle '/dr:(\\S+)/ && print \$1' | grep -v 127.0.0.1`;
-my $os_query = `cat /etc/redhat-release`;
-
-chomp($ip_query);
-chomp($os_query);
+my $ip_os_query_file       = "./ip_os_query.txt";
+my $ip_os_results_file     = "./ip_os_results.txt";
 
 
 if (!defined $user || $user eq ""){
@@ -50,21 +44,45 @@ if (!defined $password || $password eq ""){
         print "A [Password] must be provided.\n";exit 3;
         }
 
+if (-e $ip_os_query_file) {
+        print "$ip_os_query_file file already exists.\n";
+        }
+else {
+        system(`touch $ip_os_query_file`);
+        print "$ip_os_query_file file created.\n";
+        }
+
+if (-e $ip_os_results_file) {
+        print "$ip_os_results_file already exists.\n";
+        }
+else {
+        system(`touch $ip_os_results_file`);
+        print "$ip_os_results_file file created.\n";
+        }
+
 
 #--------------------------------------------------------------
-# Remote Installation of RPM
+# Remote Host OS Type & IP Address Check
 #--------------------------------------------------------------
 
 
 foreach $server (`cat $host_list`){
         chomp($server);
-        &yum_remote_query ($scp, $user, $password, $server, $timeout);
+        &ip_os_remote_query ($user, $password, $server, $timeout);
 }
 
+my $final_results = system(`cat $ip_os_query_file | grep ">" | cut -d'>' -f2 | cut -c 2-300 > $ip_os_results_file`);
+my $results_check = `cat $ip_os_results_file | wc -l`;
 
-exit 0;
 
-
+if ($results_check < 1 ) {
+        warn "There were NO Results written to the [ip_os_results.txt] file.\n";
+        exit 0;
+}
+elsif ($results_check >= 1 ) {
+        warn "Final Results are available in the [ip_os_results.txt] file.\n";
+        exit 2;
+}
 
 
 #--------------------------------------------------------------
@@ -72,31 +90,28 @@ exit 0;
 #--------------------------------------------------------------
 
 
-sub yum_remote_query (){
+sub ip_os_remote_query (){
 
-my $scp       = shift;
 my $user      = shift;
 my $password  = shift;
 my $server    = shift;
-my $localpath = shift;
 my $timeout   = shift;
 my $prompt    = '\$\s*';
 
 
         # Creating new Expect Instance.
-        my $rpm_exp = new Expect;
+        my $stats_exp = new Expect;
 
         # This sets Expect to not be so verbose on the output to the terminal. You can comment this
         # out if you want to see all of the raw output.
-        $rpm_exp->raw_pty(1);
+        $stats_exp->raw_pty(1);
 
 
         # Spawning SSH Session to Remote Host.
-        $rpm_exp->spawn("$ssh $user\@$server") or die "Cannot spawn ssh: $!\n";
-
+        $stats_exp->spawn("$ssh $user\@$server") or die "Cannot spawn ssh: $!\n";
 
         # Running Expect Function.
-        $rpm_exp->expect($timeout,
+        $stats_exp->expect($timeout,
 
         # SSH - Add Key From Remote Host Prompt.
         [qr'\(yes/no\)\s*'         , sub {my $exph = shift;
@@ -108,18 +123,20 @@ my $prompt    = '\$\s*';
                                      $action->send("$password\n");
                                      exp_continue; }],
 
-        # Check for the First RPM Key.
+        # Query the OS Type and IP Address of the Remote Host.
         [qr'login:\s*'             , sub {my $action = shift;
-                                     print "$server - $ip_query - $os_query - Successfully Retrieved!\n";
+                                     my $os_type = "`cat /etc/redhat-release`";
+                                     my $ip_addr = "`/sbin/ifconfig | perl -nle '/dr:(\\S+)/ && print \$1' | grep -v 127.0.0.1`";
+                                     $action->send("printf \"$server;$os_type;$ip_addr\n \" ");
                                      exp_continue; }],
 
-        # Exit out of the Server if the Second RPM Key was added.
+        # Exit out of the Remote Host.
         [$prompt                   , sub {my $action = shift;
                                      $action->send("exit\n");
                                      exp_continue; }],
 
-        # Send Notification that RPM Key Check on the Server is Complete.
-        [qr'logout\s*'            => sub {warn "$server - $ip_query - $os_query - Successfully Retrieved!\n";
+        # Send Notification that the Query was Successful.
+        [qr'logout\s*'            => sub {warn "Stats Successfully Retrieved for $server!\n";
                                      exp_continue; }],
 
         # Exception Handling subroutines are below. All Errors are treated with 'warn' instead of 'die' to ensure that
@@ -133,6 +150,12 @@ my $prompt    = '\$\s*';
         [timeout                               => sub {warn "Error: Could not login!\n"; }],
         $prompt,);
 
+        # End Expect Function
+        $stats_exp->soft_close();
+
 }
 
 
+#--------------------------------------------------------------
+# END!
+#--------------------------------------------------------------
