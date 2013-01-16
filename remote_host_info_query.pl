@@ -72,12 +72,13 @@ else {
 
 if (-e $ip_os_results_file) {
         system(`rm ./$ip_os_results_file`);
-        print "$ip_os_results_file found. Clearing out previous results.\n";
+        print "$ip_os_results_file found. Clearing out previous results.\n\n";
         }
 else {
         system(`touch $ip_os_results_file`);
-        print "$ip_os_results_file file created.\n";
+        print "$ip_os_results_file file created.\n\n";
         }
+
 
 #------------------------------------------------------------------------
 # Verifying Host List is Available and User wants to Execute Script
@@ -104,9 +105,13 @@ foreach $server (`cat $host_list`){
         &ip_os_remote_query ($username, $password, $server, $timeout);
 }
 
-my $final_results = system(`cat $ip_os_query_file | grep ">" | cut -d'>' -f2 | cut -c 2-300 > $ip_os_results_file`);
-my $results_check = `cat $ip_os_results_file | wc -l`;
 
+# Parsing out relevant entries in the Query File and formatting them in readable format in the Results File.
+my $final_results = system(`cat $ip_os_query_file | grep ">" | cut -d'>' -f2 | cut -c 2-300 > $ip_os_results_file`);
+
+
+# Verifying that the entries in the Query File were transferred to the Results File and then exiting the script.
+my $results_check = `cat $ip_os_results_file | wc -l`;
 
 if ($results_check < 1 ) {
         warn "\nThere were NO Results written to the [ip_os_results.txt] file.\n";
@@ -119,14 +124,19 @@ elsif ($results_check >= 1 ) {
 
 
 #---------------------------------------------
+# END Runtime
+#---------------------------------------------
+
+
+#---------------------------------------------
 # Subroutines
 #---------------------------------------------
 
 
 sub verify_ready_to_run () {
         if (-e $host_list) {
-                system("cat $host_list");
-                print "The Script will now query the Servers listed above. Do you want to continue? [yes/no]\n";
+                system("cat $host_list\n");
+                print "\nThe Script will now query the Servers listed above. Do you want to continue? [yes/no]\n";
                 chomp(my $choice = <STDIN>);
                 if ($choice eq "yes") {
                         return $choice;
@@ -198,6 +208,14 @@ my $prompt    = '\$\s*';
                                      $action->send("printf \"$server;$os_type;$ip_addr\n \" ");
                                      exp_continue; }],
 
+        # Query the OS Type and IP Address of the Remote Host.
+        # This option is used if the user account running the script has never logged into the Host before.
+        [qr'Creating directory\s*' , sub {my $action = shift;
+                                     my $os_type = "`cat /etc/redhat-release`";
+                                     my $ip_addr = "`/sbin/ifconfig | perl -nle '/dr:(\\S+)/ && print \$1' | grep -v 127.0.0.1`";
+                                     $action->send("printf \"$server;$os_type;$ip_addr\n \" ");
+                                     exp_continue; }],
+
         # Exit out of the Remote Host.
         [$prompt                   , sub {my $action = shift;
                                      $action->send("exit\n");
@@ -225,5 +243,5 @@ my $prompt    = '\$\s*';
 
 
 #----------------------------------------------
-# END!
+# END of Script
 #----------------------------------------------
