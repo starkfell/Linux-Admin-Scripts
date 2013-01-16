@@ -4,11 +4,13 @@
 #
 # Author(s):     Ryan Irujo
 # Inception:     01.14.2013
-# Last Modified: 01.15.2013
+# Last Modified: 01.16.2013
 #
 # Description:   Script that queries the IP Address and OS Type on a set of hosts (read from a text file).
 #                Add of all of the Hosts you would like to query in listed column name the file 'hosts.txt'.
 #                You can rename the text file by specifying a different  name in the '$host_list' variable below.
+#                The Script will prompt for a username and password to use for logging into the remote hosts
+#                as soon as you run it.
 #
 #
 # Changes:       1.15.2012 - [R. Irujo]
@@ -16,9 +18,9 @@
 #                  from the terminal.
 #
 #
-# Syntax 1:      ./remote_host_info_query [Username] [Password]
+# Syntax:        ./remote_host_info_query
 #
-# Command Line:  ./remote_host_info_query username P@wer89d!
+# Command Line:  ./remote_host_info_query
 
 use warnings;
 use Expect;
@@ -41,10 +43,10 @@ my $timeout                = 10;
 ReadMode('noecho');
 
 print "Please provide a username to login to the Hosts being queried:\n";
-chomp(my $username = <>);
+chomp(my $username = <STDIN>);
 
 print "Please provide a password:\n";
-chomp(my $password = <>);
+chomp(my $password = <STDIN>);
 
 ReadMode('normal');
 
@@ -77,10 +79,24 @@ else {
         print "$ip_os_results_file file created.\n";
         }
 
+#------------------------------------------------------------------------
+# Verifying Host List is Available and User wants to Execute Script
+#------------------------------------------------------------------------
 
-#--------------------------------------------------------------
+my $choice = &verify_ready_to_run();
+
+if ($choice eq "yes") {
+        print "Starting NOW!\n";
+        }
+if ($choice eq "no") {
+        print "Exiting Script...\n";
+        exit 2;
+        }
+
+
+#---------------------------------------------
 # Remote Host OS Type & IP Address Check
-#--------------------------------------------------------------
+#---------------------------------------------
 
 
 foreach $server (`cat $host_list`){
@@ -102,9 +118,38 @@ elsif ($results_check >= 1 ) {
 }
 
 
-#--------------------------------------------------------------
+#---------------------------------------------
 # Subroutines
-#--------------------------------------------------------------
+#---------------------------------------------
+
+
+sub verify_ready_to_run () {
+        if (-e $host_list) {
+                system("cat $host_list");
+                print "The Script will now query the Servers listed above. Do you want to continue? [yes/no]\n";
+                chomp(my $choice = <STDIN>);
+                if ($choice eq "yes") {
+                        return $choice;
+                }
+                if ($choice eq "no") {
+                        return $choice;
+                }
+                while ($choice ne "yes" && $choice ne "no") {
+                        print "Please type in either 'yes' or 'no':\n";
+                        chomp(my $choice = <STDIN>);
+                        if ($choice eq "yes") {
+                                return $choice;
+                        }
+                        if ($choice eq "no") {
+                                return $choice;
+                        }
+                }
+        }
+        else {
+                print "Check to see if [hosts.txt] is available or if the script lists a different file in the [\$host_list] variable.\n";
+                exit 2;
+        }
+}
 
 
 sub ip_os_remote_query (){
@@ -179,7 +224,6 @@ my $prompt    = '\$\s*';
 }
 
 
-#--------------------------------------------------------------
+#----------------------------------------------
 # END!
-#--------------------------------------------------------------
-
+#----------------------------------------------
