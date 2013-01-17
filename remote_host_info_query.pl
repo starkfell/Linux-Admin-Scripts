@@ -62,20 +62,20 @@ if (!defined $password || $password eq ""){
 
 # Adding/Preparing both the Query and Results Text Files.
 if (-e $ip_os_query_file) {
-        system(`rm ./$ip_os_query_file`);
+        system("rm ./$ip_os_query_file");
         print "$ip_os_query_file found. Clearing out previous results.\n";
         }
 else {
-        system(`touch $ip_os_query_file`);
+        system("touch $ip_os_query_file");
         print "$ip_os_query_file file created.\n";
         }
 
 if (-e $ip_os_results_file) {
-        system(`rm ./$ip_os_results_file`);
+        system("rm ./$ip_os_results_file");
         print "$ip_os_results_file found. Clearing out previous results.\n\n";
         }
 else {
-        system(`touch $ip_os_results_file`);
+        system("touch $ip_os_results_file");
         print "$ip_os_results_file file created.\n\n";
         }
 
@@ -100,18 +100,19 @@ if ($choice eq "no") {
 #---------------------------------------------
 
 
-foreach $server (`cat $host_list`){
+foreach $server (`cat $host_list`) {
         chomp($server);
         &ip_os_remote_query ($username, $password, $server, $timeout);
 }
 
 
 # Parsing out relevant entries in the Query File and formatting them in readable format in the Results File.
-my $final_results = system(`cat $ip_os_query_file | grep ">" | cut -d'>' -f2 | cut -c 2-300 > $ip_os_results_file`);
+my $final_results = system("cat $ip_os_query_file | grep '>' | cut -d'>' -f2 | cut -c 2-300 > $ip_os_results_file");
 
 
 # Verifying that the entries in the Query File were transferred to the Results File and then exiting the script.
 my $results_check = `cat $ip_os_results_file | wc -l`;
+
 
 if ($results_check < 1 ) {
         warn "\nThere were NO Results written to the [ip_os_results.txt] file.\n";
