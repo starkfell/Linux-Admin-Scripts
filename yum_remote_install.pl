@@ -9,9 +9,9 @@
 # Description:   Script that queries a specified RPM (or RPMs) on a set of Servers (read from a text file) and
 #                does the following:
 #
-#  			 1. Remove older RPMs specified in the '$check_for_retired_rpms' variable.
-#				 2. Removes any instances of the new or different RPM specified in the '$check_for_updated_rpm' variable.
-#			     3. Installs/Reinstalls a new or different RPM specified in the '$install_updated_rpm' variable.
+#  		 1. Remove older RPMs specified in the '$check_for_retired_rpms' variable.
+#		 2. Removes any instances of the new or different RPM specified in the '$check_for_updated_rpm' variable.
+#		 3. Installs/Reinstalls a new or different RPM specified in the '$install_updated_rpm' variable.
 #
 #                Add of all of the Servers you would like to query into a single column in a file named 'servers.txt'.
 #                You can rename the text file by specifying a different name in the '$server_list' variable below.
@@ -317,7 +317,7 @@ my $prompt    = '\$\s*';
         # Exception Handling subroutines are below. All Errors are treated with 'warn' instead of 'die' to ensure that
         # the Script keeps running for the the rest of the Servers in the Hosts.txt file.
         # [qr'dependencies:\s*' => sub {warn "Unable to Install $lfile on $server due to missing RPM Dependencies.\n";}],
-        #[qr'Sorry\s*'         => sub {warn "Unable to Install $lfile on $server.\n";}],
+        # [qr'Sorry\s*'         => sub {warn "Unable to Install $lfile on $server.\n";}],
         [qr'IOError\s*'                => sub {warn "Unable to Install RPM as $server is currently in Read-Only Mode.\n";}],
         [qr'OSError\s*'                => sub {warn "Unable to Install RPM as $server is currently in Read-Only Mode.\n";}],
         [qr'incident will be reported' => sub {warn "$username does not have sudo rights on $server.\n";}],
