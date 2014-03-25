@@ -34,7 +34,7 @@ $XML_Data = $XML->XMLin($RawXML);
 
 
 # Parsing through each entry found in the XML File.
-foreach $Entry (@{$XML_Data->{AuditRecord}}) {
+foreach $Entry ($XML_Data->{AuditRecord}) {
 
         # Parsing through each 'Sql_Text' XML Entry.
         $Sql_Text_Record = $Entry->{Sql_Text};
